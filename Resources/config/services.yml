@@ -1,0 +1,21 @@
+services:
+   parabol.listener.cache_subscriber:
+        class: Parabol\CacheBundle\EventListener\CacheSubscriber
+        arguments:
+            # - "@database_connection"
+            - "@kernel"
+            - "@fragment.handler"
+            - "%parabol_cache.minifier_command%"
+            - "%parabol_cache.minifier_command_params%"
+            - "%parabol_cache.cache_dev%"
+            - "%parabol_cache.exclude%"
+        tags:
+            - { name: kernel.event_subscriber }
+   parabol.listener.cache_entity_subscriber:
+        class: Parabol\CacheBundle\EventListener\CacheEntitySubscriber
+        arguments:
+            - "@parabol.listener.cache_subscriber"
+            # - "%parabol_cache.minifier_command%"
+        tags:
+            - { name: doctrine.event_subscriber, connection: default }
+            
