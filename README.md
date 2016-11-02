@@ -3,7 +3,7 @@
 ```
 composer require parabol/parabol-cache-bundle 
 ```
-###2) Enable bundle in app/AppKernel.php adding in registerBundles():
+###2) Enable bundle in app/AppKernel.php by adding in registerBundles():
 ```
 new Parabol\CacheBundle\ParabolCacheBundle()
 ```
@@ -13,5 +13,5 @@ parameters:
 	doctrine.orm.entity_manager.class: Parabol\CacheBundle\Doctrine\ORM\EntityManager
 ```
 
-###Congratulation your HTML Cache System should be working.
+###Congratulation your HTML Cache System should be working now.
 
