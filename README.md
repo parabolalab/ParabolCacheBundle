@@ -13,5 +13,5 @@ parameters:
 	doctrine.orm.entity_manager.class: Parabol\CacheBundle\Doctrine\ORM\EntityManager
 ```
 
-###Congratulation your HTML Cache System sholde be working.
+###Congratulation your HTML Cache System should be working.
 
