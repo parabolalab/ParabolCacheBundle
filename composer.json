@@ -1,7 +1,7 @@
 {
     "name": "parabol/parabol-cache-bundle",
     "type": "symfony-bundle",
-    "description": "Automatic PHP cache system for symfony3 projects.",
+    "description": "Automatic web cache system for symfony3 projects.",
     "keywords": ["cache", "caching", "cache system", "caching system", "html minify", "html minify", "html minimize", "html minifier"],
     "homepage": "https://github.com/parabolalab/ParabolCacheBundle",
     "license": "MIT",
