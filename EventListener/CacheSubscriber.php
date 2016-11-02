@@ -347,7 +347,7 @@ class CacheSubscriber implements EventSubscriberInterface
 
     public function callEntitiesFromQuery(\Doctrine\ORM\Query $query, \Doctrine\ORM\EntityManager $em)
     {
-        // if($this->getCurrentName())
+        if($this->getCurrentName())
         {
            
            
@@ -392,8 +392,10 @@ class CacheSubscriber implements EventSubscriberInterface
             $q->setParameters($query->getParameters());
             $entities = $q->getResult();
 
-            foreach($entities as $entity)
-            $em->detach($entity);
+            if($entities)
+            {
+                foreach($entities as $entity) $em->detach($entity);
+            }
 
             // preg_match('/FROM ([^ ]+) ([^ ]+)/', $this->query->getDql(), $matches);
 
