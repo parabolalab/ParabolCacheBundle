@@ -24,7 +24,8 @@ class ParabolCacheExtension extends Extension
 
         $container->setParameter('parabol_cache.cache_dev', $config['cache_dev']);   
         $container->setParameter('parabol_cache.minifier_command', $config['minifier_command']);   
-        $container->setParameter('parabol_cache.minifier_command_params', $config['minifier_command_params']);    
+        $container->setParameter('parabol_cache.minifier_command_params', $config['minifier_command_params']);
+        $container->setParameter('parabol_cache.exclude_pattern', $config['exclude_pattern']);    
 
         $exclude = [];
 

@@ -6,9 +6,10 @@ services:
             - "@kernel"
             - "@fragment.handler"
             - "%parabol_cache.minifier_command%"
-            - "%parabol_cache.minifier_command_params%"
-            - "%parabol_cache.cache_dev%"
+            - "%parabol_cache.minifier_command_params%"            
             - "%parabol_cache.exclude%"
+            - "%parabol_cache.exclude_pattern%"
+            - "%parabol_cache.cache_dev%"
         tags:
             - { name: kernel.event_subscriber }
    parabol.listener.cache_entity_subscriber:

@@ -28,6 +28,8 @@ class Configuration implements ConfigurationInterface
                 ->arrayNode('exclude')
                     ->prototype('scalar')->end()
                 ->end() 
+                ->scalarNode('exclude_pattern')->defaultValue('^\/(_|assetic|admin)')->end()
+                
                 // ->arrayNode('dashboard')
                 // ->addDefaultsIfNotSet()
                 //     ->children()

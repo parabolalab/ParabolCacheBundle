@@ -30,6 +30,7 @@ class CacheSubscriber implements EventSubscriberInterface
     private $currentName = null;
     private $handler;
 	private $excluded;
+    private $excludedPattern;
 	private $rebuildMap = [];
     private $cachedMap = [];
     private $map = [];
@@ -40,7 +41,7 @@ class CacheSubscriber implements EventSubscriberInterface
     private $cacheDir;  
 
 
-	public function __construct($kernel, FragmentHandler $handler, $minifierCommand, $minifierCommandParams, $cacheDev, $excluded)
+	public function __construct($kernel, FragmentHandler $handler, $minifierCommand, $minifierCommandParams, $excluded, $excludedPattern, $cacheDev)
 	{
         $this->kernel = $kernel;
         $this->handler = $handler;
@@ -48,6 +49,7 @@ class CacheSubscriber implements EventSubscriberInterface
         $this->minifierCommandParams = $minifierCommandParams;
         $this->cacheDev = $cacheDev;
         $this->excluded = $excluded;
+        $this->excludedPattern = $excludedPattern;
 
         $this->cacheDir = $this->kernel->getCacheDir() . CacheSubscriber::SUBCACHE_DIR;
 		
@@ -83,7 +85,7 @@ class CacheSubscriber implements EventSubscriberInterface
     {   
         $request = $event->getRequest();
         if(!$request->isMethod(Request::METHOD_GET) || $request->isXmlHttpRequest() && $request->get('nocache') || $this->kernel->getEnvironment() == 'dev' && !$this->cacheDev) return false;
-        else return $request->getPathInfo() == '/_fragment' || $event->isMasterRequest() && !preg_match('/^\/(_|assetic|admin)/', $request->getPathInfo());
+        else return $request->getPathInfo() == '/_fragment' || $event->isMasterRequest() && !preg_match('/' . $this->excludedPattern . '/', $request->getPathInfo());
     }
 
    
@@ -101,7 +103,7 @@ class CacheSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $ext = ($this->minifierCommand && $this->minifierCommandParams ? '.min' : '') . '.html';
+        $ext = ($this->minifierCommand && $this->minifierCommandParams ? '.min' : '');
 
         if($request->attributes->get('cache') == 'excluded')
         {
@@ -154,11 +156,10 @@ class CacheSubscriber implements EventSubscriberInterface
         
         if($this->isAllowedToProccess($event))
         {
-           
             $name =  $this->getName($event, '');
             if($this->isMapable($name))
             {
-                if($this->cachedMap[$name] == '') $this->saveCacheFile($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $name . '.html', $response->getContent());
+                if($this->cachedMap[$name] == '') $this->saveCacheFile($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $name, $response->getContent(), $response->headers->get('content-type'));
                 $this->map[$name] = $response->getContent();    
 
                 if(!$event->isMasterRequest()) $response->setContent($name);
@@ -176,23 +177,32 @@ class CacheSubscriber implements EventSubscriberInterface
         return isset($this->cachedMap[$name]) && ($this->cachedMap[$name] == '' || $this->cachedMap[$name] == 'excluded');
     }
 
-    private function saveCacheFile($path, $content)
+    private function saveCacheFile($path, $content, $contentType)
     {
 
         if(!file_exists(dirname($path))) mkdir(dirname($path), 0755, true);
         
         file_put_contents($path, $content);
 
-        if($this->minifierCommand && $this->minifierCommandParams)
+        if($this->minifierCommand && $this->minifierCommandParams && strpos($contentType, 'text/html') !== false)
         {
-            $process = new Process( strtr($this->minifierCommand . ' ' . $this->minifierCommandParams, [':target' => preg_replace('/(\.[\w]+)$/', '.min$1', $path), ':source' => $path]) );
+            $process = new Process( strtr($this->minifierCommand . ' ' . $this->minifierCommandParams, [':target' => $path . '.min', ':source' => $path]) );
             $process->run();
 
             if ($this->kernel->getEnvironment() == 'dev' && !$process->isSuccessful()) {
                 throw new ProcessFailedException($process);
             }
+            else
+            {
+                unlink($path);
+            }
+
 
             // if($is_master) $event->setResponse(new Response(file_get_contents($this->dir . $this->filename_min)));
+        }
+        else
+        {
+            rename($path, $path.'.min');
         }
     }
 
@@ -206,7 +216,7 @@ class CacheSubscriber implements EventSubscriberInterface
         return $this->getActionShort($request) . '__' . sha1($request->getQueryString());
     }
 
-    private function getName($event, $ext = 'html') 
+    private function getName($event, $ext = '') 
     {
         return '___' . ($event->isMasterRequest() ? 'master' : 'fragment') . '__' . $this->getActionWithParams($event->getRequest())  . '___' . ($ext ? '.' . $ext : '');
     }
@@ -322,8 +332,8 @@ class CacheSubscriber implements EventSubscriberInterface
             $map = json_decode(file_get_contents($mapfile), true);
             foreach($map as $file)
             {
-                if(file_exists($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $file . '.html')) unlink($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $file. '.html');
-                if(file_exists($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $file . '.min.html')) unlink($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $file. '.min.html');
+                if(file_exists($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $file)) unlink($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $file);
+                if(file_exists($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $file . '.min')) unlink($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $file. '.min');
             }
         }
     }

@@ -40,6 +40,7 @@ parabol_cache:
 	minifier_command:
 	minifier_command_params: -o :target :source --case-sensitive --collapse-boolean-attributes  --collapse-inline-tag-whitespace --collapse-whitespace --html5 --keep-closing-slash --remove-attribute-quotes --remove-comments --remove-empty-attributes --use-short-doctype --minify-css --minify-js
 	exclude: []
+	excludePattern: ^\/(_|assetic|admin)
 ```
 
 ###Enable html-minifier
