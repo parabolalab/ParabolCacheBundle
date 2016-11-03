@@ -61,7 +61,7 @@ If you want to use some other minfier just put right path in minifier_command an
 
 
 ###Excluding actions from caching
-To exclude some actions from caching put his names (Bundle:Controller:action) into exclude array
+To exclude some actions from caching put their names (Bundle:Controller:action) into exclude array
 ```
 parabol_cache:
 	exclude: [AppBundle:Default:index, AppBundle:Other:show]
