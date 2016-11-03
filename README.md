@@ -15,3 +15,13 @@ parameters:
 
 ###Congratulation your HTML Cache System should be working now.
 
+## Configuration
+
+###Default bundle configuration
+```
+parabol_cache:
+	cache_dev: false
+	minifier_command:
+	minifier_command_params: -o :target :source --case-sensitive --collapse-boolean-attributes  --collapse-inline-tag-whitespace --collapse-whitespace --html5 --keep-closing-slash --remove-attribute-quotes --remove-comments --remove-empty-attributes --use-short-doctype --minify-css --minify-js
+	exclude: []
+```

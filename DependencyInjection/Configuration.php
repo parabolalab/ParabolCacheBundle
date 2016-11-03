@@ -22,7 +22,7 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-                ->booleanNode('cache_dev')->defaultValue('')->end()
+                ->booleanNode('cache_dev')->defaultValue(false)->end()
                 ->scalarNode('minifier_command')->defaultValue('')->end()
                 ->scalarNode('minifier_command_params')->defaultValue('-o :target :source --case-sensitive --collapse-boolean-attributes  --collapse-inline-tag-whitespace --collapse-whitespace --html5 --keep-closing-slash --remove-attribute-quotes --remove-comments --remove-empty-attributes --use-short-doctype --minify-css --minify-js')->end()
                 ->arrayNode('exclude')
