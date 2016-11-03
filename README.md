@@ -10,7 +10,7 @@ Pros:
 - Automaticlly clear cached files related to Doctrine Entity after changes.
 - Minify HTML output - useful for Google PageSpeed Tools better results ;)
 
-##How it work
+##How it works
 ...
 
 ## Installation
