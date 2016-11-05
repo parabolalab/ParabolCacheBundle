@@ -1,10 +1,10 @@
 #ParabolCacheBundle
-The ParabolCacheBundle provides view caching functionality for Symfony/Doctrine (for now only ORM) projects base on request/response events. All not excluded action responses are stored in separated and minified files in symfony cache directory.
+The ParabolCacheBundle provides view caching functionality for Symfony/Doctrine (for now only ORM) projects based on requests/responses events. All actions responses, excluding these not permitted in config, are stored in separated and minified files in symfony cache directory.
 The bundle also creates mapping for Doctrine queries to automatically clear only those cached files that are related to changed entities. 
 
 Pros:
 - Very simple installation
-- Start working just after 3 simple steps of installation
+- Fully operational just after 3 simple installation steps
 - Automaticlly creates cache for all not excluded actions
 - Automaticlly creates mapping between actions and entities
 - Automaticlly clear cached files related to Doctrine Entity after changes.
@@ -28,7 +28,7 @@ parameters:
 	doctrine.orm.entity_manager.class: Parabol\CacheBundle\Doctrine\ORM\EntityManager
 ```
 
-###Congratulation your HTML Cache System should be working now.
+###Congratulations, your HTML Cache System should be working now.
 
 
 ## Configuration
