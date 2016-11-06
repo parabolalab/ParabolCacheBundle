@@ -1,14 +1,14 @@
 #ParabolCacheBundle
-The ParabolCacheBundle provides view caching functionality for Symfony/Doctrine (for now only ORM) projects base on request/response events. All not excluded action responses are stored in separated and minified files in symfony cache directory.
-The bundle also creates mapping for Doctrine queries to automatically clear only those cached files that are related to changed entities. 
+The ParabolCacheBundle provides view caching functionality for Symfony/Doctrine (for now only ORM) projects based on request/response events. All responses for GET-requests (expect actions defined as excluded in bundle config) are stored in separated and minified files in symfony cache directory.
+The bundle also creates mapping for Doctrine queries in order to automatically clear only those cached files that are related to changing entity. 
 
 Pros:
-- Very simple installation
-- Start working just after 3 simple steps of installation
-- Automaticlly creates cache for all not excluded actions
-- Automaticlly creates mapping between actions and entities
-- Automaticlly clear cached files related to Doctrine Entity after changes.
-- Minify HTML output - useful for Google PageSpeed Tools better results ;)
+- Very easy installation
+- Start working just after 3 simple installation steps
+- Automatically creates cache for all not excluded actions
+- Automatically creates mapping between actions and entities
+- Automatically clear cached files related to Doctrine Entity after changes.
+- Minify HTML output - useful for getting Google PageSpeed Tools better results ;)
 
 ##How it works
 ...
@@ -44,7 +44,7 @@ parabol_cache:
 ```
 
 ###Enable html-minifier
-In symfony config.yml file put minifier_command parameter with path to html-minifier proceded by path to node.js:
+In symfony config.yml file put minifier_command parameter with path to html-minifier proceeded by path to node.js:
 ```
 parabol_cache:
 	minifier_command: /usr/local/bin/node /usr/local/bin/html-minifier
@@ -58,7 +58,7 @@ You can modify minified output by change minifier_command_params but keep in min
 
 ###Other minifier
 
-If you want to use some other minfier just put right path in minifier_command and proper command parameters in minifier_command_params.
+If you want to use an other minfier just put right path in minifier_command and proper command parameters in minifier_command_params.
 
 
 ###Excluding actions from caching
