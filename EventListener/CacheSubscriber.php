@@ -17,12 +17,11 @@ use Symfony\Component\HttpKernel\Controller\ControllerReference;
 use Symfony\Component\HttpKernel\Fragment\FragmentHandler;
 use Symfony\Component\Yaml\Yaml;
 use Doctrine\Common\Persistence\Mapping\ClassMetadata;
-
+use Parabol\CacheBundle\Mapper\EntityMapper;
 
 class CacheSubscriber implements EventSubscriberInterface 
 {
 	const SUBCACHE_DIR = '/parabol/cachebundle/';
-    const MAP_ENTITY_NAME = 'map_entity.yml';
     const CACHE_VIEWS_DIR = 'views/';
     const CACHE_MAPS_DIR = 'maps/';
 
@@ -31,10 +30,9 @@ class CacheSubscriber implements EventSubscriberInterface
     private $handler;
 	private $excluded;
     private $excludedPattern;
-	private $rebuildMap = [];
-    private $cachedMap = [];
     private $map = [];
     
+    private $cachedMap;
     private $minifierCommand;
     private $minifierCommandParams;
     private $cacheDev;
@@ -50,6 +48,8 @@ class CacheSubscriber implements EventSubscriberInterface
         $this->cacheDev = $cacheDev;
         $this->excluded = $excluded;
         $this->excludedPattern = $excludedPattern;
+        $this->cachedMap = new EntityMapper();
+
 
         $this->cacheDir = $this->kernel->getCacheDir() . CacheSubscriber::SUBCACHE_DIR;
 		
@@ -71,16 +71,6 @@ class CacheSubscriber implements EventSubscriberInterface
         return $this->currentName;
     }
 
-    // public function onKernelController(FilterControllerEvent $event)
-    // {
-    //     if ($this->kernel->getEnvironment() == 'dev')
-    //     {
-    //         return;
-    //     }
-        
-    //     
-    // }
-
     private function isAllowedToProccess(\Symfony\Component\HttpKernel\Event\KernelEvent $event)
     {   
         $request = $event->getRequest();
@@ -96,7 +86,7 @@ class CacheSubscriber implements EventSubscriberInterface
         if($this->isAllowedToProccess($event))
         {
             $this->currentName = $this->getName($event, '');
-            $this->cachedMap[$this->currentName] = '';
+            $this->cachedMap->addState($this->currentName, '');
         }
         else 
         {
@@ -105,17 +95,17 @@ class CacheSubscriber implements EventSubscriberInterface
 
         $ext = ($this->minifierCommand && $this->minifierCommandParams ? '.min' : '');
 
-        if($request->attributes->get('cache') == 'excluded')
+        if($request->attributes->get('cache') == EntityMapper::excluded)
         {
-             $this->cachedMap[$this->currentName] = 'perform';
+             $this->cachedMap->addState($this->currentName, EntityMapper::perform);
         }
         elseif(isset($this->excluded[$this->getActionShort($request)]))
         {
-            $this->cachedMap[$this->currentName] = 'excluded';
+            $this->cachedMap->addState($this->currentName, EntityMapper::excluded);
         }
         elseif(file_exists($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $this->currentName . $ext))
         {
-            $this->cachedMap[$this->currentName] = 'cached';
+            $this->cachedMap->addState($this->currentName, EntityMapper::cached);
             $content = file_get_contents($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $this->currentName . $ext);
 
             if(preg_match_all('/___(master|fragment)__([\w_]+)__([\w_=]+)___/', $content, $matches))
@@ -130,18 +120,16 @@ class CacheSubscriber implements EventSubscriberInterface
 
                         if(isset($this->excluded[$matches[2][$i]]))
                         {
-
-                            $content = preg_replace('/' . $match . '/', $this->handler->render(new ControllerReference(preg_replace('/_/', ':', $matches[2][$i]), array('cache' => 'excluded'), array('cache' => 'excluded2')), 'inline'), $content);                            
+                            $content = preg_replace('/' . $match . '/', $this->handler->render(new ControllerReference(preg_replace('/_/', ':', $matches[2][$i]), ['cache' => EntityMapper::excluded], []), 'inline'), $content);
                         }
-                        else $this->cachedMap[$this->currentName] = 'rebuild';
+                        else $this->cachedMap->addState($this->currentName, EntityMapper::rebuild);
                     }
                 }
             }
             
-            if($this->cachedMap[$this->currentName] == 'cached') $event->setResponse(new Response($content));
+            if($this->cachedMap->isState($this->currentName, EntityMapper::cached)) $event->setResponse(new Response($content));
         }
 
-        // var_dump($this->cachedMap[$name]);
 
     }
 
@@ -157,9 +145,9 @@ class CacheSubscriber implements EventSubscriberInterface
         if($this->isAllowedToProccess($event))
         {
             $name =  $this->getName($event, '');
-            if($this->isMapable($name))
+            if($this->cachedMap->isMapable($name))
             {
-                if($this->cachedMap[$name] == '') $this->saveCacheFile($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $name, $response->getContent(), $response->headers->get('content-type'));
+                if($this->cachedMap->isState($name, '')) $this->saveCacheFile($this->cacheDir . CacheSubscriber::CACHE_VIEWS_DIR . $name, $response->getContent(), $response->headers->get('content-type'));
                 $this->map[$name] = $response->getContent();    
 
                 if(!$event->isMasterRequest()) $response->setContent($name);
@@ -170,11 +158,6 @@ class CacheSubscriber implements EventSubscriberInterface
         }
 
 
-    }
-
-    private function isMapable($name )
-    {
-        return isset($this->cachedMap[$name]) && ($this->cachedMap[$name] == '' || $this->cachedMap[$name] == 'excluded');
     }
 
     private function saveCacheFile($path, $content, $contentType)
@@ -221,95 +204,6 @@ class CacheSubscriber implements EventSubscriberInterface
         return '___' . ($event->isMasterRequest() ? 'master' : 'fragment') . '__' . $this->getActionWithParams($event->getRequest())  . '___' . ($ext ? '.' . $ext : '');
     }
 
-    // public function addEntityMapByQuery($query, $params)
-    // {
-
-    //     if($this->getCurrentName())
-    //     {
-
-    //         if(in_array($query, [
-    //                 'SELECT p0_.id AS id_0, p1_.title AS title_1, p1_.slug AS slug_2 FROM parabol_page p0_ LEFT JOIN parabol_page_translation p1_ ON p0_.id = p1_.translatable_id WHERE p0_.in_menu = ? ORDER BY p0_.sort ASC',
-
-    //             ])) return;
-
-
-    //         if(preg_match_all('/([\w\d]+)\.([\w\d]+) = (\?|\d+)/', $query, $matches))
-    //         {
-    //             foreach($matches[1] as $i => $p)
-    //             {
-    //                 if($p)
-    //                 {
-    //                     if(!isset($paramsMap[$p]))  $paramsMap[$p] = [];  
-    //                     $paramsMap[$p][$matches[2][$i]] = $params[$i];
-    //                 } 
-    //             }
-    //         }
-    //         // var_dump( preg_replace('/^.*FROM/', '',$query), $matches);
-    //         echo $query . '<br /><br />';
-
-    //         var_dump($params, $paramsMap);
-
-    //         if(preg_match_all('/ FROM (\w+) (\w+)/', $query, $matches))   
-    //         {
-    //             echo 'FROM <br /><br />';
-    //             var_dump($matches);
-    //             foreach($matches[1] as $i => $entity)
-    //             {
-    //                 if(isset($paramsMap[$entity]))
-    //                 {
-    //                     $params = $paramsMap[$entity];
-    //                 }
-    //                 elseif(isset($paramsMap[$matches[2][$i]]))
-    //                 {
-    //                     $params = $paramsMap[$matches[2][$i]];
-    //                 }
-    //                 // var_dump($paramsMap, $matches);
-    //                 // var_dump(isset($paramsMap[$matches[2][$i]]));
-    //                 $file = '___map__' . $entity . '___' . implode('__' , array_keys($params)) . '___' . sha1(serialize($params)).'.json';
-
-                    
-    //                 // var_dump($params);
-    //                 echo $file . '<br /><br />';
-    //             //     $this->createMapFile($file);
-    //             }
-
-    //         }
-
-
-    //         if(preg_match_all('/ JOIN (\w+) (\w*) {0,1}ON/', $query, $matches))   
-    //         {
-    //             echo 'JOIN <br /><br />';
-    //             var_dump($matches);
-    //             foreach($matches[1] as $i => $entity)
-    //             {
-    //                 $params = null;
-    //                 if(isset($paramsMap[$entity]))
-    //                 {
-    //                     $params = $paramsMap[$entity];
-    //                 }
-    //                 elseif(isset($paramsMap[$matches[2][$i]]))
-    //                 {
-    //                     $params = $paramsMap[$matches[2][$i]];
-    //                 }
-
-    //                 if($params)
-    //                 {
-    //                     $file = '___map__' . $entity . '___' . implode('__' , array_keys($params)) . '___' . sha1(serialize($params)).'.json';
-    //                     echo $file . '<br /><br />';
-    //                 } 
-    //                 // echo 'JOIN <br /><br />';
-                    
-                    
-    //                 // $this->createMapFile($file);
-    //             }
-
-    //         }
-
- 
-
-            
-    //     } 
-    // }
 
     public function generateEntityMapFilaname($entity, ClassMetadata $cm)
     {
@@ -320,7 +214,7 @@ class CacheSubscriber implements EventSubscriberInterface
     {
         if($this->getCurrentName())
         {
-            $this->createMapFile($this->generateEntityMapFilaname($entity, $cm));
+            $this->cachedMap->createMapFile($this->cacheDir . CacheSubscriber::CACHE_MAPS_DIR, $this->generateEntityMapFilaname($entity, $cm), $this->getCurrentName());
         }
     }
 
@@ -338,67 +232,23 @@ class CacheSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function createMapFile($file)
-    {
-        $mapDir = $this->cacheDir . CacheSubscriber::CACHE_MAPS_DIR;
-        if(!file_exists($mapDir)) mkdir($mapDir, 0755, true);
-
-        if(file_exists($mapDir . $file)) $mapData = json_decode(file_get_contents($mapDir . $file), true);
-        else $mapData = [];
-
-        if(!in_array($this->getCurrentName(), $mapData)) $mapData[] = $this->getCurrentName();
-
-        if(!empty($mapData))
-        {
-            if(!file_exists($mapDir)) mkdir($mapDir, 0755, true);
-            file_put_contents($mapDir . $file, json_encode($mapData));
-        }
-    }
-
     public function callEntitiesFromQuery(\Doctrine\ORM\Query $query, \Doctrine\ORM\EntityManager $em)
     {
         if($this->getCurrentName())
         {
-           
-           
-
-
+  
             $dql = $query->getDql();
        
             preg_match_all('/(FROM|JOIN) ([^ ]+) ([^ ]+)/', substr($dql, 0, strpos($dql, 'WHERE')), $matches);
 
-            // $assocMap = [];            
             $select = '';
             foreach($matches[3] as $i => $alias)
             {
                 $select .= ($select ? ', ' : '') . $alias; 
 
-                // if(!$i) $class = $matches[2][$i];
-                // else
-                // {
-                //     list($parentAlias, $name) = explode('.', $matches[2][$i]);
-                //     $class = $assocMap[$parentAlias]['associations'][$name];
-                // }
-
-                // $cm = $em->getClassMetadata($class);
-                // $select .= ($select ? ', ' : '') . $alias; 
-                // $assocMap[$alias] = ['identifires' => $alias . '.' . implode(',' . $alias . '.', $cm->getIdentifier()), 'associations' => []];
-                // if(!empty($cm->getAssociationMappings()))
-                // {
-                    
-                //     foreach ($cm->getAssociationMappings() as $name => $assoc) {
-                //         $assocMap[$alias]['associations'][$name] = $assoc['targetEntity'];
-                //     }   
-                // }
             }
-            // var_dump($assocMap , $select);
-           
-
-            // var_dump(substr($dql, 0, strpos($dql, 'WHERE')), $matches, preg_replace('/^SELECT .* FROM/', 'SELECT '.$select.' FROM', $dql));
-            // die();
 
             $q = $em->createQuery(preg_replace('/^SELECT .* FROM/', 'SELECT '.$select.' FROM', $dql));
-            // var_dump($this->query->getParameter('id'));
             $q->setParameters($query->getParameters());
             $entities = $q->getResult();
 
@@ -407,37 +257,6 @@ class CacheSubscriber implements EventSubscriberInterface
                 foreach($entities as $entity) $em->detach($entity);
             }
 
-            // preg_match('/FROM ([^ ]+) ([^ ]+)/', $this->query->getDql(), $matches);
-
-            // $cm = $this->getEntityManager()->getClassMetadata($matches[1]);
-            
-            // $identifiers = $cm->getIdentifier();
-
-            // foreach($result as $item)
-            // {
-            //     $dev = [];
-            //     foreach ($identifiers as $ident) {
-            //         if(isset($item[$ident])) $dev[] = $item[$ident];
-            //     }
-            //     // var_dump('array result');
-            //     if(count($dev) == count($identifiers))
-            //     {
-            //         // var_dump('generate map');
-            //     }
-            //     else
-            //     {
-            //         // 
-            //     }
-                
-            // }
-
-            // $this->getEntityManager()->getRepository() $matches[1]
-            //     # code...
-            // }
-
-            // preg_match_all('/('.$matches[2].'\.[^ ]+) [^ ]+ (.*)(AND|OR)/', 'SELECT i FROM AppBundle\Entity\Foo i LEFT JOIN AppBundle\Entity\Boo b ON b.id = i.boo_id WHERE i.id = :id AND i.test = :test OR i.dupa IN (1,2,3,4)', $matches);
-
-            // var_dump($matches[1]);
         }
     }
 
