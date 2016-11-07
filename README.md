@@ -7,7 +7,7 @@ Pros:
 - Start working just after 3 simple installation steps
 - Automatically creates cache for all not excluded actions
 - Automatically creates mapping between actions and entities
-- Automatically clear cached files related to Doctrine Entity after changes.
+- Automatically clear cached files related to Doctrine Entity in postPersist/postUpdate events.
 - Minify HTML output - useful for getting Google PageSpeed Tools better results ;)
 
 ##How it works
