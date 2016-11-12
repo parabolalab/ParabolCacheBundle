@@ -239,7 +239,7 @@ class CacheSubscriber implements EventSubscriberInterface
   
             $dql = $query->getDql();
        
-            preg_match_all('/(FROM|JOIN) ([^ ]+) ([^ ]+)/', substr($dql, 0, strpos($dql, 'WHERE')), $matches);
+            preg_match_all('/(FROM|JOIN) ([^ ]+) ([^ ]+)/', $dql, $matches);
 
             $select = '';
             foreach($matches[3] as $i => $alias)
@@ -252,10 +252,10 @@ class CacheSubscriber implements EventSubscriberInterface
             $q->setParameters($query->getParameters());
             $entities = $q->getResult();
 
-            if($entities)
-            {
-                foreach($entities as $entity) $em->detach($entity);
-            }
+            // if($entities)
+            // {
+            //     foreach($entities as $entity) $em->detach($entity);
+            // }
 
         }
     }
