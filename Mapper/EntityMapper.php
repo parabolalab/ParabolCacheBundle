@@ -11,17 +11,17 @@ class EntityMapper {
 
 	private $states = [];
 
-	public function addState($action, $state)
+	public function addState($name, $state)
 	{
 		$this->states[$name] = $state;
 	}
 	
-	public function isState($action, $state)
+	public function isState($name, $state)
 	{
 		return isset($this->states[$name]) &&  $this->states[$name] == $state;
 	}
 
-	public function isMapable($action)
+	public function isMapable($name)
     {
         return isset($this->states[$name]) && ($this->states[$name] == '' || $this->states[$name] == self::excluded);
     }
