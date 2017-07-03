@@ -196,7 +196,7 @@ class CacheSubscriber implements EventSubscriberInterface
 
     private function getActionWithParams(Request $request)
     {
-        return $this->getActionShort($request) . '__' . sha1($request->getQueryString());
+        return $this->getActionShort($request) . '__' . sha1($request->getPathInfo() . $request->getQueryString());
     }
 
     private function getName($event, $ext = '') 
